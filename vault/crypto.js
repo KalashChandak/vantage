@@ -73,6 +73,26 @@ async function decryptVault(password, blob) {
   return JSON.parse(dec.decode(plaintextBuf));
 }
 
+// Encrypt with an already-derived key (used after unlock, so the
+// password itself never needs to be kept around in memory — only the
+// derived CryptoKey does, and that's cleared on lock()).
+async function encryptWithKey(key, plainObject) {
+  const iv = randomBytes(12);
+  const enc = new TextEncoder();
+  const data = enc.encode(JSON.stringify(plainObject));
+  const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
+  return { iv: bufToBase64(iv), ciphertext: bufToBase64(ciphertext) };
+}
+
+async function decryptWithKey(key, iv, ciphertext) {
+  const plaintextBuf = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: base64ToBuf(iv) },
+    key,
+    base64ToBuf(ciphertext)
+  );
+  return JSON.parse(new TextDecoder().decode(plaintextBuf));
+}
+
 function bufToBase64(buf) {
   return btoa(String.fromCharCode(...new Uint8Array(buf)));
 }
@@ -82,5 +102,5 @@ function base64ToBuf(b64) {
 }
 
 if (typeof window !== "undefined") {
-  window.VaultCrypto = { encryptVault, decryptVault };
+  window.VaultCrypto = { encryptVault, decryptVault, deriveKey, encryptWithKey, decryptWithKey, randomBytes, bufToBase64, base64ToBuf };
 }

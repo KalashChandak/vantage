@@ -108,6 +108,76 @@
   #trend-chart-svg text { fill: var(--muted); font-size: 9px; }
   #trend-chart-svg .gridline { stroke: var(--border); stroke-width: 1; }
   #trend-chart-svg .line { fill: none; stroke: var(--accent); stroke-width: 2; }
+
+  .vault-input {
+    display: block;
+    width: 100%;
+    max-width: 360px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+  .vault-warning {
+    background: rgba(242, 169, 77, 0.1);
+    border: 1px solid rgba(242, 169, 77, 0.35);
+    color: var(--accent-2);
+    font-size: 12px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    max-width: 400px;
+  }
+  #vault-create-btn, #vault-unlock-btn, #vault-add-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .secondary-btn {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .vault-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .vault-status { font-size: 12px; color: var(--danger); margin-top: 8px; min-height: 14px; }
+  .vault-key-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .vault-key-row:last-child { border-bottom: none; }
+  .vault-key-meta .provider-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    margin-left: 8px;
+  }
+  .vault-key-value { color: var(--muted); font-size: 12px; }
+  .vault-key-actions button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 10px;
+  }
+  .vault-key-actions button:hover { color: var(--text); }
+  .vault-empty { color: var(--muted); font-size: 13px; padding: 10px 0; }
 </style>
 </head>
 <body>
@@ -138,12 +208,44 @@
 
   <section id="vault">
     <h1>Vault</h1>
-    <p class="subhead">Password-locked local storage for your API keys.</p>
-    <div class="panel">
-      <div class="stub">
-        <div class="phase-tag mono">PHASE 2</div>
-        <p>The encryption engine (PBKDF2 + AES-256-GCM, <code class="mono">vault/crypto.js</code>) is already implemented and testable from this console. The unlock/create-vault UI goes here next.</p>
+    <p class="subhead">Password-locked local storage for your API keys. Nothing ever leaves this device.</p>
+
+    <div class="panel" id="vault-locked-panel">
+      <div id="vault-create-form" style="display:none;">
+        <h2>Create your vault</h2>
+        <p class="vault-warning">Choose a password you won't forget. There is no reset — if it's lost, everything inside is unrecoverable by design.</p>
+        <input type="password" id="vault-new-password" placeholder="New password (min 8 characters)" class="vault-input" />
+        <input type="password" id="vault-confirm-password" placeholder="Confirm password" class="vault-input" />
+        <button id="vault-create-btn">Create vault</button>
+        <div class="vault-status" id="vault-create-status"></div>
       </div>
+
+      <div id="vault-unlock-form" style="display:none;">
+        <h2>Unlock vault</h2>
+        <input type="password" id="vault-unlock-password" placeholder="Password" class="vault-input" />
+        <button id="vault-unlock-btn">Unlock</button>
+        <div class="vault-status" id="vault-unlock-status"></div>
+      </div>
+    </div>
+
+    <div class="panel" id="vault-unlocked-panel" style="display:none;">
+      <div class="vault-header-row">
+        <h2 style="margin:0;">Your keys</h2>
+        <button id="vault-lock-btn" class="secondary-btn">Lock vault</button>
+      </div>
+      <div id="vault-key-list"></div>
+
+      <h2 style="margin-top:24px;">Add a key</h2>
+      <select id="vault-add-provider" class="vault-input">
+        <option value="openai">OpenAI</option>
+        <option value="anthropic">Anthropic</option>
+        <option value="google">Google</option>
+        <option value="other">Other</option>
+      </select>
+      <input type="text" id="vault-add-label" placeholder="Label (e.g. Personal OpenAI key)" class="vault-input" />
+      <input type="password" id="vault-add-value" placeholder="API key value" class="vault-input" />
+      <button id="vault-add-btn">Add key</button>
+      <div class="vault-status" id="vault-add-status"></div>
     </div>
   </section>
 
@@ -161,6 +263,8 @@
 
 <script src="../storage/keys.js"></script>
 <script src="../storage/history.js"></script>
+<script src="../vault/crypto.js"></script>
+<script src="vault-ui.js"></script>
 <script src="dashboard.js"></script>
 </body>
 </html>

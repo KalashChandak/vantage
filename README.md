@@ -58,7 +58,7 @@ Claude.ai doesn't publish this API. Find it yourself:
 
 - [x] **Phase 1** — Claude subscription meter, local history, dashboard shell with working trends chart
 - [ ] **Phase 1.x** — ChatGPT / Gemini / Grok providers (same pattern as `claude.js`)
-- [ ] **Phase 2** — Vault unlock/create UI wired to `vault/crypto.js` (already functional, untested against real UI)
+- [x] **Phase 2** — Vault unlock/create UI wired to `vault/crypto.js`, session-only decrypted key held in page memory, add/copy/delete keys
 - [ ] **Phase 3** — API cost dashboard: `openai-api.js` / `anthropic-api.js` against official billing endpoints, keyed by Vault-stored credentials
 - [ ] **Phase 4** — Polish, Chrome Web Store listing, public repo cleanup
 
