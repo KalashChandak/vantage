@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "AI Usage Hub (dev name — rename freely)",
+  "version": "0.1.0",
+  "description": "Local-first usage & cost tracking across your AI subscriptions and API keys, with a secure local vault.",
+  "permissions": ["storage", "scripting", "tabs"],
+  "host_permissions": [
+    "https://claude.ai/*",
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*",
+    "https://grok.com/*",
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://claude.ai/*"],
+      "js": ["provider/base.js", "provider/claude.js", "storage/keys.js", "storage/history.js", "content-scripts/claude.js"],
+      "css": ["content-scripts/meter.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://chatgpt.com/*", "https://gemini.google.com/*", "https://grok.com/*"],
+      "js": ["content-scripts/handoff-target.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

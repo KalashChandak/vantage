@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { width: 260px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; padding: 14px; color: #222; }
+    h1 { font-size: 14px; margin: 0 0 10px; }
+    .row { display: flex; justify-content: space-between; font-size: 12px; margin: 6px 0; }
+    .row .val { font-weight: 600; }
+    button { width: 100%; margin-top: 12px; padding: 8px; border: none; border-radius: 6px; background: #4f7cff; color: white; font-size: 12px; cursor: pointer; }
+
+    .handoff-section { margin-top: 16px; padding-top: 12px; border-top: 1px solid #e5e5e5; }
+    .handoff-label { font-size: 11px; color: #888; margin-bottom: 8px; }
+    .handoff-buttons { display: flex; gap: 6px; }
+    .handoff-btn { flex: 1; margin-top: 0; background: #f2f2f2; color: #222; padding: 7px 4px; font-size: 11px; }
+    .handoff-btn:hover { background: #e5e5e5; }
+    .handoff-status { font-size: 11px; color: #888; margin-top: 8px; min-height: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Claude</h1>
+  <div class="row"><span>Session used</span><span class="val" id="pct">—</span></div>
+  <div class="row"><span>Model</span><span class="val" id="model">—</span></div>
+  <div class="row"><span>Est. messages left</span><span class="val" id="left">—</span></div>
+  <div class="row"><span>Resets in</span><span class="val" id="resets">—</span></div>
+  <button id="open-dashboard">Open full dashboard</button>
+
+  <div class="handoff-section">
+    <div class="handoff-label">Hit your limit? Continue this chat in:</div>
+    <div class="handoff-buttons">
+      <button class="handoff-btn" data-target="chatgpt">ChatGPT</button>
+      <button class="handoff-btn" data-target="gemini">Gemini</button>
+      <button class="handoff-btn" data-target="grok">Grok</button>
+    </div>
+    <div class="handoff-status" id="handoff-status"></div>
+  </div>
+
+  <script src="../storage/keys.js"></script>
+  <script src="../storage/history.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

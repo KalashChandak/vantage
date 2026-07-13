@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AI Usage Hub</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --surface: #171a21;
+    --surface-2: #1e222b;
+    --border: #2a2f3a;
+    --text: #e6e8ec;
+    --muted: #8b93a1;
+    --accent: #5b8cff;
+    --accent-2: #f2a94d;
+    --danger: #ef5350;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex;
+    min-height: 100vh;
+  }
+  .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+
+  nav {
+    width: 190px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    flex-shrink: 0;
+  }
+  nav .brand {
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    padding: 0 20px 18px;
+    text-transform: uppercase;
+  }
+  nav button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 10px 20px;
+    font-size: 13px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+  }
+  nav button.active {
+    color: var(--text);
+    border-left-color: var(--accent);
+    background: var(--surface-2);
+  }
+  nav button:hover { color: var(--text); }
+
+  main { flex: 1; padding: 28px 36px; max-width: 980px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .subhead { color: var(--muted); font-size: 12px; margin: 0 0 26px; }
+
+  section { display: none; }
+  section.active { display: block; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 30px; }
+  .gauge-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .gauge-card .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .gauge-card .big { font-size: 22px; font-weight: 600; }
+  .gauge-card .detail { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 16px; }
+
+  .stub {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .stub .phase-tag {
+    display: inline-block;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--accent-2);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin-bottom: 12px;
+  }
+
+  #trend-chart-svg text { fill: var(--muted); font-size: 9px; }
+  #trend-chart-svg .gridline { stroke: var(--border); stroke-width: 1; }
+  #trend-chart-svg .line { fill: none; stroke: var(--accent); stroke-width: 2; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">AI Usage Hub</div>
+  <button data-section="overview" class="active">Overview</button>
+  <button data-section="trends">Trends</button>
+  <button data-section="vault">Vault</button>
+  <button data-section="api-costs">API Costs</button>
+</nav>
+
+<main>
+  <section id="overview" class="active">
+    <h1>Overview</h1>
+    <p class="subhead">Live snapshot across every connected subscription and API key.</p>
+    <div class="card-grid" id="overview-cards"></div>
+  </section>
+
+  <section id="trends">
+    <h1>Trends</h1>
+    <p class="subhead">Session usage over the last 30 days, logged locally on your device.</p>
+    <div class="panel">
+      <h2>Claude — % used over time</h2>
+      <svg id="trend-chart-svg" viewBox="0 0 700 220" width="100%"></svg>
+    </div>
+  </section>
+
+  <section id="vault">
+    <h1>Vault</h1>
+    <p class="subhead">Password-locked local storage for your API keys.</p>
+    <div class="panel">
+      <div class="stub">
+        <div class="phase-tag mono">PHASE 2</div>
+        <p>The encryption engine (PBKDF2 + AES-256-GCM, <code class="mono">vault/crypto.js</code>) is already implemented and testable from this console. The unlock/create-vault UI goes here next.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="api-costs">
+    <h1>API Costs</h1>
+    <p class="subhead">Spend tracking against your OpenAI / Anthropic / Google API keys, via their official billing endpoints.</p>
+    <div class="panel">
+      <div class="stub">
+        <div class="phase-tag mono">PHASE 3</div>
+        <p>Provider adapters (<code class="mono">provider/openai-api.js</code>, <code class="mono">provider/anthropic-api.js</code>) are scaffolded. This panel lights up once the Vault (Phase 2) can hand them a decrypted key to query with.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="../storage/keys.js"></script>
+<script src="../storage/history.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>
