@@ -40,6 +40,8 @@ async function handoff(targetKey) {
 }
 
 
+// popup/popup.js
+(async function () {
   const snapshot = await getLatest("claude");
   document.getElementById("open-dashboard").addEventListener("click", () => {
     chrome.tabs.create({ url: chrome.runtime.getURL("dashboard/dashboard.html") });
