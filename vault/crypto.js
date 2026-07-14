@@ -3,18 +3,13 @@
 // Password-locked local storage for API keys, using the browser's native
 // Web Crypto API — no external crypto library, no server round-trip.
 //
-// Design:
-//   password -> PBKDF2 (100k iterations, random salt) -> AES-256-GCM key
-//   plaintext API keys -> encrypted with that key -> stored as a single
-//   opaque blob in chrome.storage.local
-//
-// Nothing about the password is ever stored. If it's forgotten, the vault
-// is unrecoverable by design — that's the honest tradeoff of doing this
-// properly instead of faking "security" with a resettable password.
-//
-// This file is functional today; Phase 2 wires it to an unlock UI in the
-// dashboard. Test it now from the dashboard's dev console if you want to
-// confirm it round-trips correctly before building UI around it.
+// Design: "envelope encryption" — a randomly generated master key does the
+// actual data encryption, and that master key is separately wrapped
+// (encrypted) by BOTH your password and a one-time recovery key. Either
+// one independently unwraps the master key. This means forgetting your
+// password isn't fatal as long as you saved the recovery key shown at
+// vault creation — but losing both is unrecoverable by design, since
+// there's no server or account to fall back on.
 
 const PBKDF2_ITERATIONS = 100000;
 
@@ -93,6 +88,36 @@ async function decryptWithKey(key, iv, ciphertext) {
   return JSON.parse(new TextDecoder().decode(plaintextBuf));
 }
 
+// ── Recovery key support ────────────────────────────────────────────────
+// The recovery key is 20 random bytes (160 bits) — enough entropy that no
+// password-style stretching (PBKDF2) is needed, unlike a human-chosen
+// password. It's hashed once with SHA-256 to produce a 256-bit AES key.
+
+async function deriveKeyFromRecoveryBytes(bytes) {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return crypto.subtle.importKey("raw", digest, "AES-GCM", false, ["encrypt", "decrypt"]);
+}
+
+async function importRawAesKey(bytes, extractable = false) {
+  return crypto.subtle.importKey("raw", bytes, "AES-GCM", extractable, ["encrypt", "decrypt"]);
+}
+
+// 20 bytes -> 40 hex chars -> grouped as XXXX-XXXX-...-XXXX (8 groups) for
+// readability. Hex only (0-9a-f) avoids the look-alike character problems
+// of base64 (0/O, l/1/I).
+function formatRecoveryKey(bytes) {
+  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return hex.match(/.{1,4}/g).join("-");
+}
+
+function parseRecoveryKey(str) {
+  const hex = str.replace(/[^0-9a-fA-F]/g, "").toLowerCase();
+  if (hex.length !== 40) throw new Error("Recovery key should be 40 hex characters (ignoring dashes/spaces).");
+  const bytes = new Uint8Array(20);
+  for (let i = 0; i < 20; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+  return bytes;
+}
+
 function bufToBase64(buf) {
   return btoa(String.fromCharCode(...new Uint8Array(buf)));
 }
@@ -102,5 +127,9 @@ function base64ToBuf(b64) {
 }
 
 if (typeof window !== "undefined") {
-  window.VaultCrypto = { encryptVault, decryptVault, deriveKey, encryptWithKey, decryptWithKey, randomBytes, bufToBase64, base64ToBuf };
+  window.VaultCrypto = {
+    encryptVault, decryptVault, deriveKey, encryptWithKey, decryptWithKey,
+    randomBytes, bufToBase64, base64ToBuf,
+    deriveKeyFromRecoveryBytes, importRawAesKey, formatRecoveryKey, parseRecoveryKey
+  };
 }

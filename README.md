@@ -58,17 +58,28 @@ Claude.ai doesn't publish this API. Find it yourself:
 
 - [x] **Phase 1** — Claude subscription meter, local history, dashboard shell with working trends chart
 - [ ] **Phase 1.x** — ChatGPT / Gemini / Grok providers (same pattern as `claude.js`)
-- [x] **Phase 2** — Vault unlock/create UI wired to `vault/crypto.js`, session-only decrypted key held in page memory, add/copy/delete keys
+- [x] **Phase 2** — Multi-vault UI: create any number of named vaults, each optionally password-locked (with a one-time recovery key for backup) or left unlocked for low-sensitivity use; add/copy/delete keys per vault
 - [ ] **Phase 3** — API cost dashboard: `openai-api.js` / `anthropic-api.js` against official billing endpoints, keyed by Vault-stored credentials
 - [ ] **Phase 4** — Polish, Chrome Web Store listing, public repo cleanup
 
 ## Security notes
 
-The vault (`vault/crypto.js`) derives an AES-256 key from your password
-via PBKDF2 (100k iterations, random salt per vault). Nothing about the
-password is ever stored — if it's forgotten, the vault is unrecoverable
-by design. No key material or usage data is ever sent to a server,
-because there isn't one.
+Each locked vault uses envelope encryption: a random master key does the
+actual data encryption, and that master key is separately wrapped by both
+your password (PBKDF2, 100k iterations) and a one-time recovery key shown
+once at creation. Either independently unlocks the vault — so forgetting
+your password isn't fatal if you saved the recovery key, but losing both
+is unrecoverable by design, since there's no server or account to fall
+back on. Unlocked (no-password) vaults are available for low-sensitivity
+use, clearly labeled as unencrypted when created. No key material or
+usage data is ever sent to a server, because there isn't one.
+
+## Usage notifications
+
+Every 25% of session usage (25/50/75/100%), a native Chrome notification
+fires via `chrome.notifications`. Tracking resets automatically when a
+new session starts (detected by a change in `resetsAt`). Clicking a
+notification opens the dashboard.
 
 ## Known fragile points
 

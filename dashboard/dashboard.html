@@ -178,6 +178,24 @@
   }
   .vault-key-actions button:hover { color: var(--text); }
   .vault-empty { color: var(--muted); font-size: 13px; padding: 10px 0; }
+
+  .vault-recovery-display {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    color: var(--accent-2);
+    word-break: break-all;
+    max-width: 460px;
+  }
+  #vault-forgot-link {
+    display: block;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
 </style>
 </head>
 <body>
@@ -208,30 +226,70 @@
 
   <section id="vault">
     <h1>Vault</h1>
-    <p class="subhead">Password-locked local storage for your API keys. Nothing ever leaves this device.</p>
+    <p class="subhead">Local storage for your API keys. Choose per vault whether to lock it with a password.</p>
 
-    <div class="panel" id="vault-locked-panel">
-      <div id="vault-create-form" style="display:none;">
-        <h2>Create your vault</h2>
-        <p class="vault-warning">Choose a password you won't forget. There is no reset — if it's lost, everything inside is unrecoverable by design.</p>
-        <input type="password" id="vault-new-password" placeholder="New password (min 8 characters)" class="vault-input" />
-        <input type="password" id="vault-confirm-password" placeholder="Confirm password" class="vault-input" />
-        <button id="vault-create-btn">Create vault</button>
-        <div class="vault-status" id="vault-create-status"></div>
+    <div class="panel" id="vault-list-panel">
+      <div class="vault-header-row">
+        <h2 style="margin:0;">Your vaults</h2>
+        <button id="vault-new-btn" class="secondary-btn">+ New vault</button>
       </div>
+      <div id="vault-list"></div>
+    </div>
 
-      <div id="vault-unlock-form" style="display:none;">
-        <h2>Unlock vault</h2>
-        <input type="password" id="vault-unlock-password" placeholder="Password" class="vault-input" />
-        <button id="vault-unlock-btn">Unlock</button>
-        <div class="vault-status" id="vault-unlock-status"></div>
+    <div class="panel" id="vault-new-panel" style="display:none;">
+      <h2>Create a new vault</h2>
+      <input type="text" id="vault-new-name" placeholder="Vault name (e.g. Personal, Work)" class="vault-input" />
+      <label style="display:block;font-size:13px;margin-bottom:12px;">
+        <input type="checkbox" id="vault-new-lock-checkbox" checked /> Lock this vault with a password
+      </label>
+      <div id="vault-new-password-fields">
+        <input type="password" id="vault-new-password" placeholder="Password (min 8 characters)" class="vault-input" />
+        <input type="password" id="vault-new-password-confirm" placeholder="Confirm password" class="vault-input" />
+      </div>
+      <div id="vault-new-nolock-warning" class="vault-warning" style="display:none;">
+        This vault's keys will be stored without encryption, readable by anything with access to this browser profile. Only use this for low-sensitivity placeholders.
+      </div>
+      <div style="margin-top:4px;">
+        <button id="vault-new-create-btn">Create vault</button>
+        <button id="vault-new-cancel-btn" class="secondary-btn">Cancel</button>
+      </div>
+      <div class="vault-status" id="vault-new-status"></div>
+    </div>
+
+    <div class="panel" id="vault-recovery-reveal-panel" style="display:none;">
+      <h2>Save your recovery key</h2>
+      <p class="vault-warning">This is the only backup if you forget this vault's password. It will not be shown again — store it somewhere safe (a password manager, an offline note). Anyone with this key can unlock this vault.</p>
+      <div id="vault-recovery-key-display" class="mono vault-recovery-display"></div>
+      <button id="vault-recovery-copy-btn" class="secondary-btn">Copy</button>
+      <label style="display:block;margin-top:16px;font-size:13px;">
+        <input type="checkbox" id="vault-recovery-confirm-checkbox" /> I've saved this recovery key somewhere safe
+      </label>
+      <button id="vault-recovery-continue-btn" disabled style="margin-top:12px;">Continue</button>
+    </div>
+
+    <div class="panel" id="vault-unlock-panel" style="display:none;">
+      <h2 id="vault-unlock-title">Unlock vault</h2>
+      <input type="password" id="vault-unlock-password" placeholder="Password" class="vault-input" />
+      <button id="vault-unlock-btn">Unlock</button>
+      <button id="vault-unlock-back-btn" class="secondary-btn">Back</button>
+      <div class="vault-status" id="vault-unlock-status"></div>
+      <a href="#" id="vault-forgot-link">Forgot password? Use recovery key</a>
+      <div id="vault-recovery-unlock-form" style="display:none;margin-top:14px;">
+        <input type="text" id="vault-recovery-input" placeholder="Recovery key (xxxx-xxxx-...)" class="vault-input mono" />
+        <input type="password" id="vault-recovery-new-password" placeholder="New password (min 8 characters)" class="vault-input" />
+        <input type="password" id="vault-recovery-new-password-confirm" placeholder="Confirm new password" class="vault-input" />
+        <button id="vault-recovery-unlock-btn">Recover &amp; set new password</button>
+        <div class="vault-status" id="vault-recovery-status"></div>
       </div>
     </div>
 
-    <div class="panel" id="vault-unlocked-panel" style="display:none;">
+    <div class="panel" id="vault-manage-panel" style="display:none;">
       <div class="vault-header-row">
-        <h2 style="margin:0;">Your keys</h2>
-        <button id="vault-lock-btn" class="secondary-btn">Lock vault</button>
+        <h2 id="vault-manage-title" style="margin:0;"></h2>
+        <div>
+          <button id="vault-lock-btn" class="secondary-btn">Lock</button>
+          <button id="vault-manage-back-btn" class="secondary-btn">Back to vaults</button>
+        </div>
       </div>
       <div id="vault-key-list"></div>
 

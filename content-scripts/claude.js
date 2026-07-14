@@ -58,11 +58,42 @@
     fill.className = percentUsed > 85 ? "danger" : percentUsed > 60 ? "warn" : "";
   }
 
+  async function checkUsageThreshold(snapshot) {
+    try {
+      const key = STORAGE_KEYS.NOTIFIED_PREFIX + snapshot.providerId;
+      const existing = await chrome.storage.local.get(key);
+      let { threshold = 0, resetsAt = null } = existing[key] || {};
+
+      // A new session (different reset time) means we start milestone
+      // tracking over from zero again.
+      if (resetsAt !== snapshot.resetsAt) {
+        threshold = 0;
+        resetsAt = snapshot.resetsAt;
+      }
+
+      const milestone = Math.floor(snapshot.percentUsed / 25) * 25;
+      if (milestone >= 25 && milestone > threshold) {
+        chrome.runtime.sendMessage({
+          type: "USAGE_MILESTONE",
+          providerId: snapshot.providerId,
+          percent: milestone,
+          model: snapshot.model
+        });
+        threshold = milestone;
+      }
+
+      await chrome.storage.local.set({ [key]: { threshold, resetsAt } });
+    } catch (err) {
+      if (!err?.message?.includes("Extension context invalidated")) throw err;
+    }
+  }
+
   async function poll() {
     const snapshot = await provider.fetchUsage();
     if (snapshot) {
       latestSnapshot = snapshot;
       await logSnapshot(snapshot);
+      await checkUsageThreshold(snapshot);
     }
     render();
   }
