@@ -70,8 +70,12 @@ async function renderVaultList() {
         <strong>${escapeHtml(v.name)}</strong>
         <span class="provider-tag">${v.locked ? (unlockedNow ? "unlocked" : "locked") : "no password"}</span>
       </div>
-      <div class="vault-key-actions"><button data-id="${v.id}">Open →</button></div>`;
-    row.querySelector("button").addEventListener("click", () => openVault(v.id));
+      <div class="vault-key-actions">
+        <button class="open-btn" data-id="${v.id}">Open →</button>
+        <button class="delete-btn" data-id="${v.id}" style="color:var(--danger);">Delete</button>
+      </div>`;
+    row.querySelector(".open-btn").addEventListener("click", () => openVault(v.id));
+    row.querySelector(".delete-btn").addEventListener("click", () => deleteVault(v.id, v.name));
     container.appendChild(row);
   });
 }
@@ -103,6 +107,15 @@ async function openVault(id) {
   document.getElementById("vault-unlock-status").textContent = "";
   document.getElementById("vault-recovery-unlock-form").style.display = "none";
   showPanel("unlock");
+}
+
+async function deleteVault(id, name) {
+  if (!confirm(`Delete vault "${name}"? This cannot be undone — all keys inside it are permanently lost.`)) return;
+  await chrome.storage.local.remove(vaultDataKey(id));
+  vaultList = vaultList.filter((v) => v.id !== id);
+  await saveVaultList();
+  delete sessionVaults[id];
+  renderVaultList();
 }
 
 document.getElementById("vault-new-btn").addEventListener("click", () => {
@@ -322,6 +335,9 @@ function renderManage() {
   const session = sessionVaults[currentVaultId];
   document.getElementById("vault-manage-title").textContent = meta.name;
   document.getElementById("vault-lock-btn").style.display = meta.locked ? "inline-block" : "none";
+  document.getElementById("vault-toggle-lock-btn").textContent = meta.locked ? "Remove password" : "Add password";
+  document.getElementById("vault-rename-form").style.display = "none";
+  document.getElementById("vault-add-password-form").style.display = "none";
 
   const list = document.getElementById("vault-key-list");
   list.innerHTML = "";
@@ -392,6 +408,110 @@ document.getElementById("vault-manage-back-btn").addEventListener("click", () =>
   currentVaultId = null;
   showPanel("list");
   renderVaultList();
+});
+
+// ── Rename ───────────────────────────────────────────────────────────────
+document.getElementById("vault-rename-btn").addEventListener("click", () => {
+  const meta = vaultList.find((v) => v.id === currentVaultId);
+  document.getElementById("vault-rename-input").value = meta.name;
+  document.getElementById("vault-rename-form").style.display = "block";
+});
+
+document.getElementById("vault-rename-cancel-btn").addEventListener("click", () => {
+  document.getElementById("vault-rename-form").style.display = "none";
+});
+
+document.getElementById("vault-rename-save-btn").addEventListener("click", async () => {
+  const newName = document.getElementById("vault-rename-input").value.trim();
+  if (!newName) return;
+  const meta = vaultList.find((v) => v.id === currentVaultId);
+  meta.name = newName;
+  await saveVaultList();
+  renderManage();
+});
+
+// ── Delete from inside the manage panel ────────────────────────────────
+document.getElementById("vault-delete-btn").addEventListener("click", async () => {
+  const meta = vaultList.find((v) => v.id === currentVaultId);
+  if (!confirm(`Delete vault "${meta.name}"? This cannot be undone — all keys inside it are permanently lost.`)) return;
+  await chrome.storage.local.remove(vaultDataKey(currentVaultId));
+  vaultList = vaultList.filter((v) => v.id !== currentVaultId);
+  await saveVaultList();
+  delete sessionVaults[currentVaultId];
+  currentVaultId = null;
+  showPanel("list");
+  renderVaultList();
+});
+
+// ── Add / remove password protection on an existing vault ──────────────
+document.getElementById("vault-toggle-lock-btn").addEventListener("click", async () => {
+  const meta = vaultList.find((v) => v.id === currentVaultId);
+
+  if (meta.locked) {
+    if (!confirm(`Remove password protection from "${meta.name}"? Its keys will be stored unencrypted from now on.`)) return;
+    const session = sessionVaults[currentVaultId];
+    await chrome.storage.local.set({ [vaultDataKey(currentVaultId)]: { locked: false, plain: session.data } });
+    meta.locked = false;
+    await saveVaultList();
+    session.cryptoKey = null;
+    renderManage();
+    return;
+  }
+
+  document.getElementById("vault-add-password-new").value = "";
+  document.getElementById("vault-add-password-confirm").value = "";
+  document.getElementById("vault-add-password-status").textContent = "";
+  document.getElementById("vault-add-password-form").style.display = "block";
+});
+
+document.getElementById("vault-add-password-cancel-btn").addEventListener("click", () => {
+  document.getElementById("vault-add-password-form").style.display = "none";
+});
+
+document.getElementById("vault-add-password-save-btn").addEventListener("click", async () => {
+  const pw = document.getElementById("vault-add-password-new").value;
+  const confirm2 = document.getElementById("vault-add-password-confirm").value;
+  const status = document.getElementById("vault-add-password-status");
+
+  if (pw.length < 8) { status.textContent = "Password must be at least 8 characters."; return; }
+  if (pw !== confirm2) { status.textContent = "Passwords don't match."; return; }
+
+  const meta = vaultList.find((v) => v.id === currentVaultId);
+  const session = sessionVaults[currentVaultId];
+
+  const salt = VaultCrypto.randomBytes(16);
+  const masterKeyRaw = VaultCrypto.randomBytes(32);
+  const masterKeyForUse = await VaultCrypto.importRawAesKey(masterKeyRaw, false);
+
+  const passwordKey = await VaultCrypto.deriveKey(pw, salt);
+  const passwordWrap = await VaultCrypto.encryptWithKey(passwordKey, { k: VaultCrypto.bufToBase64(masterKeyRaw) });
+
+  const recoveryBytes = VaultCrypto.randomBytes(20);
+  const recoveryKeyStr = VaultCrypto.formatRecoveryKey(recoveryBytes);
+  const recoveryKey = await VaultCrypto.deriveKeyFromRecoveryBytes(recoveryBytes);
+  const recoveryWrap = await VaultCrypto.encryptWithKey(recoveryKey, { k: VaultCrypto.bufToBase64(masterKeyRaw) });
+
+  const dataBlob = await VaultCrypto.encryptWithKey(masterKeyForUse, session.data);
+
+  await chrome.storage.local.set({
+    [vaultDataKey(currentVaultId)]: {
+      locked: true,
+      salt: VaultCrypto.bufToBase64(salt),
+      passwordWrap,
+      recoveryWrap,
+      dataIv: dataBlob.iv,
+      dataCiphertext: dataBlob.ciphertext
+    }
+  });
+  meta.locked = true;
+  await saveVaultList();
+  session.cryptoKey = masterKeyForUse;
+
+  pendingReveal = { id: currentVaultId, name: meta.name };
+  document.getElementById("vault-recovery-key-display").textContent = recoveryKeyStr;
+  document.getElementById("vault-recovery-confirm-checkbox").checked = false;
+  document.getElementById("vault-recovery-continue-btn").disabled = true;
+  showPanel("recovery-reveal");
 });
 
 // Refresh the vault list whenever the Vault tab is opened

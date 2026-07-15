@@ -287,10 +287,29 @@
       <div class="vault-header-row">
         <h2 id="vault-manage-title" style="margin:0;"></h2>
         <div>
+          <button id="vault-rename-btn" class="secondary-btn">Rename</button>
+          <button id="vault-toggle-lock-btn" class="secondary-btn"></button>
+          <button id="vault-delete-btn" class="secondary-btn" style="color:var(--danger);">Delete vault</button>
           <button id="vault-lock-btn" class="secondary-btn">Lock</button>
           <button id="vault-manage-back-btn" class="secondary-btn">Back to vaults</button>
         </div>
       </div>
+
+      <div id="vault-rename-form" style="display:none;margin-bottom:18px;">
+        <input type="text" id="vault-rename-input" class="vault-input" style="display:inline-block;width:240px;margin-right:8px;" />
+        <button id="vault-rename-save-btn" class="secondary-btn">Save</button>
+        <button id="vault-rename-cancel-btn" class="secondary-btn">Cancel</button>
+      </div>
+
+      <div id="vault-add-password-form" style="display:none;margin-bottom:18px;">
+        <h2>Add password protection</h2>
+        <input type="password" id="vault-add-password-new" placeholder="New password (min 8 characters)" class="vault-input" />
+        <input type="password" id="vault-add-password-confirm" placeholder="Confirm password" class="vault-input" />
+        <button id="vault-add-password-save-btn">Add password protection</button>
+        <button id="vault-add-password-cancel-btn" class="secondary-btn">Cancel</button>
+        <div class="vault-status" id="vault-add-password-status"></div>
+      </div>
+
       <div id="vault-key-list"></div>
 
       <h2 style="margin-top:24px;">Add a key</h2>
